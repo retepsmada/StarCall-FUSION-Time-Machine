@@ -10,7 +10,10 @@
  * https://playground.arduino.cc/Code/NTPclient
 */
 
-enum month { JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC };
+#include <Ethernet.h>
+#include <SPI.h>
+
+enum month { JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCTe, NOV, DECe };
 
 typedef struct {
     unsigned day;
@@ -99,14 +102,14 @@ void loop() {
     //At 6:59:00, prepare to reset the time so it can be done swiftly at 7:00
     //but don't actually reset it yet:
     if ((now.hour == 6) && (now.minute == 59) && (now.second == 0) && notStartedDTMF) {
-        DO THE DTMF THING
-        ENTER ALL DIGITS OF PASSWORD EXCEPT LAST ONE
+        //DO THE DTMF THING
+        //ENTER ALL DIGITS OF PASSWORD EXCEPT LAST ONE
         //We have started DTMF:
         notStartedDTMF = false;
     }
     //At 7:00:00, immediately reset the time:
     if ((now.hour == 7) && (now.minute == 0) && (now.second == 0) && !notStartedDTMF) {
-        ENTER LAST DIGIT OF PASSWORD
+        //ENTER LAST DIGIT OF PASSWORD
         //Reset notStartedDTMF now that we're done:
         notStartedDTMF = true;
     }
