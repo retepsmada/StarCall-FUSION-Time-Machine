@@ -76,13 +76,28 @@ void loop()
   }
 }
 
-void setTime(int time){
-  byte PhoneNumber[]={8,6,7,5,3,0,9};//Check
-  dialNumber((4,0,0,0),4);
+void setTime(){
+  const int delay_ = 20; //Number of seconds before the next minute that we start the dialing
+  RTC.read(tm); //This is the current time
+  int startHour = tm.Hour;
+  int startMinute = tm.Minute;
+  //If we don't have enough time do the sequence before the next minute, do it at the minute after:
+  if (tm.Second+delay_ > 60) startMinute++;
+  //If the start minute is 60, then increment the hour, subtract minute by 60:
+  startHour += (startMinute/60);
+  startMinute %= 60;
+  //Keep updating the time until we get to delay seconds before the next minute:
+  while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);
+  
+  byte sequence[]={4,0,0,0};//Check
+  dialNumber(sequence,4);
   delay(3000);
-  dialNumber(750,3);
+  sequence[0] = 7;
+  sequence[1] = 5;
+  sequence[2] = 0;
+  dialNumber(sequence,3);
   delay(1000);
-  dialNumber(time,4);
+  dialNumber(5,4);
   delay(500);
   dialNumber(11,1);
   delay(500);
