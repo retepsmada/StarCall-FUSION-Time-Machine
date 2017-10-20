@@ -18,7 +18,7 @@
 //Relay Pin
 const byte phoneHook = A1;
 //Relay Trigger Pin
-const byte offHook = 13;
+const byte hookButton = 12;
 
 //Ethernet Variables
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
@@ -60,7 +60,7 @@ void setup()
   pinMode(phoneHook,OUTPUT);
   digitalWrite(phoneHook, LOW);
   pinMode(setTimePin,INPUT_PULLUP); // Button for testing
-  pinMode(offHook,INPUT_PULLUP); //Button for taking phone off hook
+  pinMode(hookButton,INPUT_PULLUP); //Button for taking phone off hook
   Ethernet.begin(mac, ip, gateway, subnet); 
   EthernetClient client; //For Time HTTP
   unsigned long unixTime = webUnixTime(client); //For Time HTTP
@@ -68,7 +68,17 @@ void setup()
  
 void loop()
 {
-
+  int test = 0;
+  if((digitalRead(hookButton) == LOW) && (test == 0))
+  {
+    digitalWrite(phoneHook, HIGH);
+    test = 1;
+  }
+  else
+  {
+    digitalWrite(phoneHook, LOW);
+    test = 0; 
+  }
 }
 
 void setTime(int time){
