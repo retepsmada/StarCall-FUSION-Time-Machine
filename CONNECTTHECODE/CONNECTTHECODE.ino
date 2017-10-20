@@ -3,6 +3,7 @@
 #include <Wire.h>//For I2C
 #include <Time.h>//Dependancy For DS1307
 #include <TimeLib.h>//Dependancy For Time
+#include <TimeAlarms.h>
 #include <DS1307RTC.h>//For RTC
 
 /* The sequence for dialing the clocks is this:
@@ -65,19 +66,13 @@ void setup()
   EthernetClient client; //For Time HTTP
   unsigned long unixTime = webUnixTime(client); //For Time HTTP
 }
- 
+ bool test = true;
 void loop()
 {
-  int test = 0;
-  if((digitalRead(hookButton) == LOW) && (test == 0))
-  {
-    digitalWrite(phoneHook, HIGH);
-    test = 1;
-  }
-  else
-  {
-    digitalWrite(phoneHook, LOW);
-    test = 0; 
+  if(digitalRead(hookButton) == LOW){
+    digitalWrite(phoneHook, test);
+    test = !test;
+    delay(1000);
   }
 }
 
