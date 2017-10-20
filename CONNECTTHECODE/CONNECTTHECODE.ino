@@ -1,5 +1,9 @@
-#include <Ethernet.h>
-#include <SPI.h>
+#include <Ethernet.h> //Ethernet Client
+#include <SPI.h> //For Interfacing With Ethernet Shield
+#include <Wire.h>//For I2C
+#include <Time.h>//Dependancy For DS1307
+#include <TimeLib.h>//Dependancy For Time
+#include <DS1307RTC.h>//For RTC
 
 /* The sequence for dialing the clocks is this:
  *  Extension of system: 4000
@@ -9,16 +13,28 @@
  *  Password: 1234
 */
 
-const byte tone1Pin=3; // pin for tone 1
-const byte tone2Pin=4; // pin for tone 2
-byte PhoneNumber[]={8,6,7,5,3,0,9}; // for special characters: 10=*, 11=#, 12=1sec delay
-byte PhoneNumberLength = 7;  // adjust to length of phone number
-const byte buttonPin=7; // for momentary switch
+//A4 and A5 are used for I2C
 
+//Relay Pin
+const byte phoneHook = A1;
+//Relay Trigger Pin
+const byte offHook = 13;
+
+//Ethernet Variables
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 byte ip[] = {172, 19, 1, 521};
 byte gateway[] = {172, 19, 1, 1};
 byte subnet[] = {};
+
+//Time Variables
+tmElements_t tm; //DS1307 Get Time Object (tm.Second)
+
+//DTMF Variables
+const byte tone1Pin=3; // pin for tone 1
+const byte tone2Pin=4; // pin for tone 2
+// for special characters: 10=*, 11=#, 12=1sec delay
+//dialNumber(PhoneNumber,PhoneNumberLength);   Dial the number
+const byte setTimePin=7; // for momentary switch
 
 // frequencies adopted from: https://en.wikipedia.org/wiki/Dual-tone_multi-frequency_signaling
 int DTMF[13][2]={
@@ -36,12 +52,15 @@ int DTMF[13][2]={
   {941,1477}, // frequencies for touch tone #
   {0,0} // pause
 };
- 
+
 void setup()
 {  
   pinMode(tone1Pin,OUTPUT); // Output for Tone 1
   pinMode(tone2Pin,OUTPUT); // Output for Tone 2
-  pinMode(buttonPin,INPUT_PULLUP); // Button
+  pinMode(phoneHook,OUTPUT);
+  digitalWrite(phoneHook, LOW);
+  pinMode(setTimePin,INPUT_PULLUP); // Button for testing
+  pinMode(offHook,INPUT_PULLUP); //Button for taking phone off hook
   Ethernet.begin(mac, ip, gateway, subnet); 
   EthernetClient client; //For Time HTTP
   unsigned long unixTime = webUnixTime(client); //For Time HTTP
@@ -49,9 +68,21 @@ void setup()
  
 void loop()
 {
-  if(digitalRead(buttonPin)==LOW){  // If the button is pushed
-    dialNumber(PhoneNumber,PhoneNumberLength);  // Dial the number
-  }
+
+}
+
+void setTime(int time){
+  byte PhoneNumber[]={8,6,7,5,3,0,9};//Check
+  dialNumber((4,0,0,0),4);
+  delay(3000);
+  dialNumber(750,3);
+  delay(1000);
+  dialNumber(time,4);
+  delay(500);
+  dialNumber(11,1);
+  delay(500);
+  dialNumber(123,3);
+  //while(time != tm.get)
 }
  
 void playDTMF(byte digit, byte duration){
@@ -88,7 +119,6 @@ void dialNumber(byte number[],byte len){ //Main function for actualy inputing nu
     delay(100); // 100 msec pause between tones
   }
 }
-//END OF FILE
 
 /*
  * © Francesco Potortì 2013 - GPLv3
