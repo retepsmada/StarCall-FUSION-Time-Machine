@@ -36,7 +36,7 @@ const byte tone2Pin=4; // pin for tone 2
 // for special characters: 10=*, 11=#, 12=1sec delay
 //dialNumber(PhoneNumber,PhoneNumberLength);   Dial the number
 const byte setTimePin=7; // for momentary switch
-bool test = true; //For relay testing
+bool phoneHookOn = false; //For relay testing
 
 // frequencies adopted from: https://en.wikipedia.org/wiki/Dual-tone_multi-frequency_signaling
 int DTMF[13][2]={
@@ -59,98 +59,112 @@ void setup()
 {  
   pinMode(tone1Pin,OUTPUT); // Output for Tone 1
   pinMode(tone2Pin,OUTPUT); // Output for Tone 2
-  pinMode(phoneHook,OUTPUT);
+  pinMode(phoneHook,OUTPUT); // Output for picking/hanging up the phone
   digitalWrite(phoneHook, LOW);
   pinMode(setTimePin,INPUT_PULLUP); // Button for testing
-  pinMode(hookButton,INPUT_PULLUP); //Button for taking phone off hook
-  Ethernet.begin(mac, ip, gateway, subnet); 
-  EthernetClient client; //For Time HTTP
-  unsigned long unixTime = webUnixTime(client); //For Time HTTP
-  Serial.begin(115200);
+  pinMode(hookButton,INPUT_PULLUP); // Button for taking phone off hook
   
+  Ethernet.begin(mac, ip, gateway, subnet); 
+  EthernetClient client; //This is used to get the time over HTTP
+  //Get the current time from the Internet:
+  unsigned long unixTime = webUnixTime(client);
+  Serial.begin(115200);
+
+  //Set the time for the school clock at 7:04:00
   Alarm.alarmRepeat(7, 4, 0, setTimeAlarm);
+  //Sync real-time clock with Internet at 6:30:00
   Alarm.alarmRepeat(6, 30, 0, getInternetTime);
 }
  
 void loop()
 {
+  //If hookButton is pressed, toggle whether the phone is picked up or not:
   if(digitalRead(hookButton) == LOW){
-    digitalWrite(phoneHook, test);
-    test = !test;
+    phoneHookOn = !phoneHookOn;
+    digitalWrite(phoneHook, phoneHookOn);
     delay(1000);
   }
+  //If setTimePin is pressed, set the time for the school clock:
   if(digitalRead(setTimePin) == LOW){
     setTime();
   }
 }
 
 void setTimeAlarm(){
-  setTime();
+  /* Callback for TimeAlarms used to sync school clocks */
   
+  setTime();
 }
 
 void getInternetTime(){
+  /* Callback for TimeAlarms used to sync real-time clock with Internet */
   
 }
 
 void setTime(){
+  /* Sets the school clocks by the minute according to the real-time clock */
+  
   Serial.println("setTime() started");
-  const int delay_ = 15; //Number of seconds before the next minute that we start the dialing
+  //Number of seconds before the next minute that we start the dialing
+  const int delay_ = 15;
   RTC.read(tm); //This is the current time
-  int startHour = tm.Hour;
-  int startMinute = tm.Minute;
   Serial.print("Current time is ");
-  Serial.print(startHour);
+  Serial.print(tm.Hour);
   Serial.print(":");
-  Serial.println(startMinute);
+  Serial.println(tm.Minute);
+  
+  //This represents the minute at which we will start the sequence
+  int startMinute = tm.Minute;
   //If we don't have enough time do the sequence before the next minute, do it at the minute after:
   if (tm.Second+delay_ > 60) startMinute++;
-  //If the start minute is 60, then increment the hour, subtract minute by 60:
-  startHour += (startMinute/60);
+  //If the start minute is 60, subtract minute by 60:
   startMinute %= 60;
   //Keep updating the time until we get to delay seconds before the next minute:
-  while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);//Maybe we don't need to check the hour?
+  while ((tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);
+  
   digitalWrite(phoneHook, HIGH); //Phone off hook
   delay(500);
-  byte sequence[]={4,0,0,0,0};//Dial 4000
+  byte sequence[]={4,0,0,0,0}; //Dial 4000
   dialNumber(sequence,4); 
   delay(3000);
+  
   sequence[0] = 7; //Then 750
   sequence[1] = 5;
   sequence[2] = 0;
   dialNumber(sequence,3);
   delay(1000);
-  if(tm.Hour > 9){ //Make sure we append with 0 if needed
-    sequence[0] = int(tm.Hour/10);
-    sequence[1] = tm.Hour % 10;
-  } else {
-    sequence[0] = 0;
-    sequence[1] = tm.Hour;
-  }
-  if(tm.Minute > 9){
-    sequence[2] = int(tm.Minute/10);
-    sequence[3] = tm.Minute % 10;
-  } else {
-    sequence[2] = 0;
-    sequence[3] = tm.Minute;
-  }
+
+  //These two digits represent the hour:
+  sequence[0] = tm.Hour/10;
+  sequence[1] = tm.Hour % 10;
+  //These two digits represent the minute:
+  sequence[2] = tm.Minute/10;
+  sequence[3] = tm.Minute % 10;
   sequence[4] = 11; //This is the #
-  dialNumber(sequence,5);
+  dialNumber(sequence,5); //Dial the hour, minute, followed by #
   delay(500);
+  
   sequence[0] = 1; //Start the password
   sequence[1] = 2;
   sequence[2] = 3;
   dialNumber(sequence,3);
-  sequence[0] = 4;
+  
+  sequence[0] = 4; //Last digit of password:
   Serial.println("Wait for it...");
   while(tm.Second > 0) RTC.read(tm); //Wait for the minute to tick over
-  dialNumber(sequence,1);
+  dialNumber(sequence,1); //Finish the password
   delay(500);
+  
   digitalWrite(phoneHook, LOW); //Hang up
   delay(500);
 }
  
 void playDTMF(byte digit, byte duration){
+  /* Plays two DTMF tones to mimic pressing a button on the phone keypad
+  digit -> Represents button on keypad, according to indexes in DTMF array above
+  duration -> Number of milliseconds the tone should play for
+  */
+  
   boolean tone1state=false;
   boolean tone2state=false;
   int tone1delay=(500000/DTMF[digit][0])-10; // calculate delay (in microseconds) for tone 1 (half of the period of one cycle). 10 is a fudge factor to raise the frequency due to sluggish timing.
@@ -178,21 +192,25 @@ void playDTMF(byte digit, byte duration){
   }
 }
  
-void dialNumber(byte number[],byte len){ //Main function for actualy inputing numbers
-  for(int i=0;i<len;i++){
-    playDTMF(number[i], 100);  // 100 msec duration of tone
+void dialNumber(byte numbers[],byte len){
+  /* Mimics pressing a sequence of buttons on the phone keypad
+  numbers -> Sequence of numbers representing phone buttons, as according to indexes in DTMF array
+  len -> Length of numbers array
+  */
+  
+  for(int i=0;i<len;i++){ //Loop through numbers
+    playDTMF(numbers[i], 100);  // 100 msec duration of tone
     delay(300); // 300 msec pause between tones
   }
 }
 
-/*
- * © Francesco Potortì 2013 - GPLv3
- *
- * Send an HTTP packet and wait for the response, return the Unix time
- */
-
 unsigned long webUnixTime (Client &client)
 {
+  /*
+   * © Francesco Potortì 2013 - GPLv3
+   *
+   * Send an HTTP packet and wait for the response, return the Unix time
+   */
   unsigned long time = 0;
 
   // Just choose any reasonably busy web server, the load is really low

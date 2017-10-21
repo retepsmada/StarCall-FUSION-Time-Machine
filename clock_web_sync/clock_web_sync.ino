@@ -13,7 +13,7 @@
 #include <Ethernet.h>
 #include <SPI.h>
 
-enum month { JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCTe, NOV, DECe };
+enum month { JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT_, NOV, DEC_ };
 
 typedef struct {
     unsigned day;
@@ -57,9 +57,9 @@ time_obj webUnixTime (Client &client)
             switch (buf[0]) {
                 case 'F': timeInfo.month = FEB; break; // Feb
                 case 'S': timeInfo.month = SEP; break; // Sep
-                case 'O': timeInfo.month = OCT; break; // Oct
+                case 'O': timeInfo.month = OCT_; break; // Oct
                 case 'N': timeInfo.month = NOV; break; // Nov
-                case 'D': timeInfo.month = DEC; break; // Dec
+                case 'D': timeInfo.month = DEC_; break; // Dec
                 default:
                   if (buf[0] == 'J' && buf[1] == 'a')
                       timeInfo.month = JAN;        // Jan
