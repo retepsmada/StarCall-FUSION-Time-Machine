@@ -69,18 +69,27 @@ void setup()
  bool test = true;
 void loop()
 {
+  Serial.begin(115200);
   if(digitalRead(hookButton) == LOW){
     digitalWrite(phoneHook, test);
     test = !test;
     delay(1000);
   }
+  if(digitalRead(setTimePin) == LOW){
+    setTime();
+  }
 }
 
 void setTime(){
+  Serial.println("setTime started");
   const int delay_ = 20; //Number of seconds before the next minute that we start the dialing
   RTC.read(tm); //This is the current time
   int startHour = tm.Hour;
   int startMinute = tm.Minute;
+  Serial.print("Current time is ");
+  Serial.print(startHour);
+  Serial.print(":");
+  Serial.println(startMinute);
   //If we don't have enough time do the sequence before the next minute, do it at the minute after:
   if (tm.Second+delay_ > 60) startMinute++;
   //If the start minute is 60, then increment the hour, subtract minute by 60:
@@ -88,8 +97,9 @@ void setTime(){
   startMinute %= 60;
   //Keep updating the time until we get to delay seconds before the next minute:
   while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);
-  
-  byte sequence[]={4,0,0,0};//Check
+  digitalWrite(phoneHook, HIGH);
+  delay(500);
+  byte sequence[]={4,0,0,0,0};//Check
   dialNumber(sequence,4);
   delay(3000);
   sequence[0] = 7;
@@ -97,12 +107,34 @@ void setTime(){
   sequence[2] = 0;
   dialNumber(sequence,3);
   delay(1000);
-  dialNumber(5,4);
+  if(tm.Hour > 9){
+    sequence[0] = int(tm.Hour/10);
+    sequence[1] = tm.Hour % 10;
+  } else {
+    sequence[0] = 0;
+    sequence[1] = tm.Hour;
+  }
+  if(tm.Minute > 9){
+    sequence[2] = int(tm.Minute/10);
+    sequence[3] = tm.Minute % 10;
+  } else {
+    sequence[2] = 0;
+    sequence[3] = tm.Minute;
+  }
+  sequence[4] = 11;
+  dialNumber(sequence,5);
   delay(500);
-  dialNumber(11,1);
+  sequence[0] = 1;
+  sequence[1] = 2;
+  sequence[2] = 3;
+  dialNumber(sequence,3);
+  sequence[0] = 4;
+  Serial.println("Wait for it...");
+  while(tm.Second > 0) RTC.read(tm);
+  dialNumber(sequence,1);
   delay(500);
-  dialNumber(123,3);
-  //while(time != tm.get)
+  digitalWrite(phoneHook, LOW);
+  delay(500);
 }
  
 void playDTMF(byte digit, byte duration){
