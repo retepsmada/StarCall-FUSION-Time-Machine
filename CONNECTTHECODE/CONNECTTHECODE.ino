@@ -67,6 +67,9 @@ void setup()
   EthernetClient client; //For Time HTTP
   unsigned long unixTime = webUnixTime(client); //For Time HTTP
   Serial.begin(115200);
+  
+  Alarm.alarmRepeat(7, 4, 0, setTimeAlarm);
+  Alarm.alarmRepeat(6, 30, 0, getInternetTime);
 }
  
 void loop()
@@ -81,9 +84,18 @@ void loop()
   }
 }
 
+void setTimeAlarm(){
+  setTime();
+  
+}
+
+void getInternetTime(){
+  
+}
+
 void setTime(){
   Serial.println("setTime() started");
-  const int delay_ = 20; //Number of seconds before the next minute that we start the dialing
+  const int delay_ = 15; //Number of seconds before the next minute that we start the dialing
   RTC.read(tm); //This is the current time
   int startHour = tm.Hour;
   int startMinute = tm.Minute;
@@ -97,7 +109,7 @@ void setTime(){
   startHour += (startMinute/60);
   startMinute %= 60;
   //Keep updating the time until we get to delay seconds before the next minute:
-  while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);
+  while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);//Maybe we don't need to check the hour?
   digitalWrite(phoneHook, HIGH); //Phone off hook
   delay(500);
   byte sequence[]={4,0,0,0,0};//Dial 4000
@@ -184,7 +196,7 @@ unsigned long webUnixTime (Client &client)
   unsigned long time = 0;
 
   // Just choose any reasonably busy web server, the load is really low
-  if (client.connect("g.cn", 80))
+  if (client.connect("google.com", 80))
     {
       // Make an HTTP 1.1 request which is missing a Host: header
       // compliant servers are required to answer with an error that includes
