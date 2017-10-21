@@ -36,6 +36,7 @@ const byte tone2Pin=4; // pin for tone 2
 // for special characters: 10=*, 11=#, 12=1sec delay
 //dialNumber(PhoneNumber,PhoneNumberLength);   Dial the number
 const byte setTimePin=7; // for momentary switch
+bool test = true; //For relay testing
 
 // frequencies adopted from: https://en.wikipedia.org/wiki/Dual-tone_multi-frequency_signaling
 int DTMF[13][2]={
@@ -65,11 +66,11 @@ void setup()
   Ethernet.begin(mac, ip, gateway, subnet); 
   EthernetClient client; //For Time HTTP
   unsigned long unixTime = webUnixTime(client); //For Time HTTP
+  Serial.begin(115200);
 }
- bool test = true;
+ 
 void loop()
 {
-  Serial.begin(115200);
   if(digitalRead(hookButton) == LOW){
     digitalWrite(phoneHook, test);
     test = !test;
@@ -81,7 +82,7 @@ void loop()
 }
 
 void setTime(){
-  Serial.println("setTime started");
+  Serial.println("setTime() started");
   const int delay_ = 20; //Number of seconds before the next minute that we start the dialing
   RTC.read(tm); //This is the current time
   int startHour = tm.Hour;
@@ -97,17 +98,17 @@ void setTime(){
   startMinute %= 60;
   //Keep updating the time until we get to delay seconds before the next minute:
   while ((tm.Hour != startHour) || (tm.Minute != startMinute) || (tm.Second+delay_ != 60)) RTC.read(tm);
-  digitalWrite(phoneHook, HIGH);
+  digitalWrite(phoneHook, HIGH); //Phone off hook
   delay(500);
-  byte sequence[]={4,0,0,0,0};//Check
-  dialNumber(sequence,4);
+  byte sequence[]={4,0,0,0,0};//Dial 4000
+  dialNumber(sequence,4); 
   delay(3000);
-  sequence[0] = 7;
+  sequence[0] = 7; //Then 750
   sequence[1] = 5;
   sequence[2] = 0;
   dialNumber(sequence,3);
   delay(1000);
-  if(tm.Hour > 9){
+  if(tm.Hour > 9){ //Make sure we append with 0 if needed
     sequence[0] = int(tm.Hour/10);
     sequence[1] = tm.Hour % 10;
   } else {
@@ -121,19 +122,19 @@ void setTime(){
     sequence[2] = 0;
     sequence[3] = tm.Minute;
   }
-  sequence[4] = 11;
+  sequence[4] = 11; //This is the #
   dialNumber(sequence,5);
   delay(500);
-  sequence[0] = 1;
+  sequence[0] = 1; //Start the password
   sequence[1] = 2;
   sequence[2] = 3;
   dialNumber(sequence,3);
   sequence[0] = 4;
   Serial.println("Wait for it...");
-  while(tm.Second > 0) RTC.read(tm);
+  while(tm.Second > 0) RTC.read(tm); //Wait for the minute to tick over
   dialNumber(sequence,1);
   delay(500);
-  digitalWrite(phoneHook, LOW);
+  digitalWrite(phoneHook, LOW); //Hang up
   delay(500);
 }
  
