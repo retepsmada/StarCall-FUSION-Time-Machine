@@ -168,7 +168,7 @@ void playDTMF(byte digit, byte duration){
 void dialNumber(byte number[],byte len){ //Main function for actualy inputing numbers
   for(int i=0;i<len;i++){
     playDTMF(number[i], 100);  // 100 msec duration of tone
-    delay(100); // 100 msec pause between tones
+    delay(300); // 300 msec pause between tones
   }
 }
 
