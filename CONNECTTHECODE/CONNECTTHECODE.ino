@@ -30,6 +30,7 @@ byte subnet[] = {};
 //Time Variables
 tmElements_t tm; //DS1307 Get Time Object (tm.Second)
 
+
 //DTMF Variables
 const byte tone1Pin=3; // pin for tone 1
 const byte tone2Pin=4; // pin for tone 2
@@ -70,6 +71,8 @@ void setup()
   unsigned long unixTime = webUnixTime(client);
   Serial.begin(115200);
 
+  setSyncProvider(RTC.get);
+  
   //Set the time for the school clock at 7:04:00
   Alarm.alarmRepeat(7, 4, 0, setTimeAlarm);
   //Sync real-time clock with Internet at 6:30:00
@@ -78,6 +81,9 @@ void setup()
  
 void loop()
 {
+  Serial.print(hour());
+  Serial.print(minute());
+  Serial.println(second());
   //If hookButton is pressed, toggle whether the phone is picked up or not:
   if(digitalRead(hookButton) == LOW){
     phoneHookOn = !phoneHookOn;
@@ -92,7 +98,7 @@ void loop()
 
 void setTimeAlarm(){
   /* Callback for TimeAlarms used to sync school clocks */
-  
+  Serial.println("ITS WORKING YEAH BOIIIIII");
   setTime();
 }
 
