@@ -1,5 +1,7 @@
 void setTime(){
   /* Sets the school clocks by the minute according to the real-time clock */
+
+  digitalWrite(phoneHook, LOW); //Make sure phone is on hook
   
   Serial.println("setTime() started");
   //Number of seconds before the next minute that we start the dialing

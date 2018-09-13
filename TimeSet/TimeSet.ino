@@ -21,15 +21,37 @@ const byte phoneHook = A1;
 //Relay Trigger Pin
 const byte hookButton = 12;
 
+//DTMF Variables
+const byte tone1Pin=3; // pin for tone 1
+const byte tone2Pin=4; // pin for tone 2
+// for special characters: 10=*, 11=#, 12=1sec delay
+//dialNumber(PhoneNumber,PhoneNumberLength);   Dial the number
+const byte setTimePin=7; // for momentary switch
+bool phoneHookOn = false; //For relay testing
+
+//Ethernet Variables
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+byte ip[] = {172, 19, 1, 521};
+byte gateway[] = {172, 19, 1, 1};
+byte subnet[] = {};
+
+//Time Variables
+tmElements_t tm; //DS1307 Get Time Object (tm.Second)
+
+
 void setup()
 {  
+  //outputs
   pinMode(tone1Pin,OUTPUT); // Output for Tone 1
   pinMode(tone2Pin,OUTPUT); // Output for Tone 2
   pinMode(phoneHook,OUTPUT); // Output for picking/hanging up the phone
   digitalWrite(phoneHook, LOW);
+  
+  //inputs
   pinMode(setTimePin,INPUT_PULLUP); // Button for testing
   pinMode(hookButton,INPUT_PULLUP); // Button for taking phone off hook
-  
+
+  //ethernet and time
   Ethernet.begin(mac, ip, gateway, subnet); 
   EthernetClient client; //This is used to get the time over HTTP
   //Get the current time from the Internet:
@@ -46,15 +68,18 @@ void setup()
  
 void loop()
 {
+  //for testing
   Serial.print(hour());
   Serial.print(minute());
   Serial.println(second());
+  
   //If hookButton is pressed, toggle whether the phone is picked up or not:
   if(digitalRead(hookButton) == LOW){
     phoneHookOn = !phoneHookOn;
     digitalWrite(phoneHook, phoneHookOn);
     delay(1000);
   }
+
   //If setTimePin is pressed, set the time for the school clock:
   if(digitalRead(setTimePin) == LOW){
     setTime();

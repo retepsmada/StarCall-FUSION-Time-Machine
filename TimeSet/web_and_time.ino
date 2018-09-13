@@ -1,13 +1,3 @@
-//Ethernet Variables
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-byte ip[] = {172, 19, 1, 521};
-byte gateway[] = {172, 19, 1, 1};
-byte subnet[] = {};
-
-
-//Time Variables
-tmElements_t tm; //DS1307 Get Time Object (tm.Second)
-
 void getInternetTime(){
   /* Callback for TimeAlarms used to sync real-time clock with Internet */
   

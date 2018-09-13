@@ -1,11 +1,3 @@
-//DTMF Variables
-const byte tone1Pin=3; // pin for tone 1
-const byte tone2Pin=4; // pin for tone 2
-// for special characters: 10=*, 11=#, 12=1sec delay
-//dialNumber(PhoneNumber,PhoneNumberLength);   Dial the number
-const byte setTimePin=7; // for momentary switch
-bool phoneHookOn = false; //For relay testing
-
 // frequencies adopted from: https://en.wikipedia.org/wiki/Dual-tone_multi-frequency_signaling
 int DTMF[13][2]={
   {941,1336}, // frequencies for touch tone 0
